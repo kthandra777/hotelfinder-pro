@@ -14,5 +14,5 @@ bs4==0.0.1
 beautifulsoup4==4.12.2
 webdriver-manager==4.0.0
 pydantic>=2.4.2,<3.0.0
-# Add greenlet with specific version for Python 3.12 compatibility
-greenlet<2.0.0
+# Specify a specific Python 3.12 compatible version of greenlet
+greenlet==1.1.3.post0
