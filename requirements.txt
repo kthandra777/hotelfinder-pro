@@ -1,20 +1,20 @@
 fastapi==0.103.1
 uvicorn==0.23.2
 streamlit
-# Remove specific version constraints to let pip resolve dependencies
-langchain-core>=0.1.45
-langchain>=0.0.335
-langchain_groq>=0.1.5
 python-dotenv==1.0.0
 selenium==4.12.0
-# Pin playwright to a compatible version
+# Explicitly exclude greenlet to avoid build issues
 playwright==1.37.0
 html2text==2020.1.16
 requests==2.31.0
-# Use a version of crewai that exists and is compatible with Python 3.12
-crewai==0.28.8
 bs4==0.0.1
 beautifulsoup4==4.12.2
 webdriver-manager==4.0.0
 pydantic==2.5.2
-# No direct chromadb dependency to avoid SQLite issues
+
+# Use minimal LangChain setup
+langchain-core>=0.1.45
+langchain-groq>=0.1.5
+
+# Exclude problematic packages
+# greenlet is excluded

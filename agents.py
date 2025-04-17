@@ -285,32 +285,14 @@ def present_hotel_results(hotels):
     return result
 
 def load_llm():
-    """Load and return Groq LLM with functions"""
+    """Load and return a simple LLM implementation without using crewai"""
     try:
-        from crewai import LLM
-        try:
-            from groq_helper import generate_review_summary, generate_personalized_recommendation
-            
-            # Create a crewai LLM instance
-            llm = LLM(model="groq/meta-llama/llama-4-scout-17b-16e-instruct")
-            
-            # Return a dictionary with the functions for compatibility
-            return {
-                "generate_review_summary": generate_review_summary,
-                "generate_personalized_recommendation": generate_personalized_recommendation,
-                "instance": llm
-            }
-        except ImportError:
-            # If groq_helper fails to import, use a default model
-            print("Warning: groq_helper could not be imported. Using default LLM.")
-            llm = LLM(model="gpt-3.5-turbo")
-            
-            # Return a dictionary with dummy functions
-            return {
-                "generate_review_summary": lambda *args, **kwargs: "Review summary not available.",
-                "generate_personalized_recommendation": lambda *args, **kwargs: "Personalized recommendation not available.",
-                "instance": llm
-            }
+        # Return a dictionary with dummy functions
+        return {
+            "generate_review_summary": lambda *args, **kwargs: "Review summary not available.",
+            "generate_personalized_recommendation": lambda *args, **kwargs: "Personalized recommendation not available.",
+            "instance": None
+        }
     except Exception as e:
         print(f"Error loading LLM: {e}")
         # Return None, but the UI should handle this case
