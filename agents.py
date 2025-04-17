@@ -1,12 +1,30 @@
+# Import tool from crewai.tools if available, otherwise define custom decorator
+try:
+    from crewai.tools import BaseTool, tool
+except ImportError:
+    # If tool is not available in crewai.tools, create a simple decorator
+    class BaseTool:
+        pass
+        
+    def tool(name):
+        def decorator(func):
+            func.name = name
+            return func
+        return decorator
+
 from langchain_core.tools import Tool, StructuredTool
 from hotel_search import search_hotels
 from browserbase import browserbase
-from kayak import kayak_hotels, kayak_hotel_search
+from kayak import kayak_hotels, kayak_hotel_search, tool
 from typing import Dict, Optional, List, Any
 import streamlit as st
 from datetime import date
 from crewai import Task, Agent
-from crewai.tools import BaseTool, tool
+
+# Define a BaseTool class if it's not available from crewai
+class BaseTool:
+    """Simple base tool class for compatibility"""
+    pass
 
 # Define tools as LangChain tools
 browserbase_tool = StructuredTool.from_function(
@@ -270,20 +288,37 @@ def load_llm():
     """Load and return Groq LLM with functions"""
     try:
         from crewai import LLM
-        from groq_helper import generate_review_summary, generate_personalized_recommendation
-        
-        # Create a crewai LLM instance
-        llm = LLM(model="groq/meta-llama/llama-4-scout-17b-16e-instruct")
-        
-        # Return a dictionary with the functions for compatibility
-        return {
-            "generate_review_summary": generate_review_summary,
-            "generate_personalized_recommendation": generate_personalized_recommendation,
-            "instance": llm
-        }
+        try:
+            from groq_helper import generate_review_summary, generate_personalized_recommendation
+            
+            # Create a crewai LLM instance
+            llm = LLM(model="groq/meta-llama/llama-4-scout-17b-16e-instruct")
+            
+            # Return a dictionary with the functions for compatibility
+            return {
+                "generate_review_summary": generate_review_summary,
+                "generate_personalized_recommendation": generate_personalized_recommendation,
+                "instance": llm
+            }
+        except ImportError:
+            # If groq_helper fails to import, use a default model
+            print("Warning: groq_helper could not be imported. Using default LLM.")
+            llm = LLM(model="gpt-3.5-turbo")
+            
+            # Return a dictionary with dummy functions
+            return {
+                "generate_review_summary": lambda *args, **kwargs: "Review summary not available.",
+                "generate_personalized_recommendation": lambda *args, **kwargs: "Personalized recommendation not available.",
+                "instance": llm
+            }
     except Exception as e:
         print(f"Error loading LLM: {e}")
-        return None
+        # Return None, but the UI should handle this case
+        return {
+            "generate_review_summary": lambda *args, **kwargs: "Review summary not available.",
+            "generate_personalized_recommendation": lambda *args, **kwargs: "Personalized recommendation not available.",
+            "instance": None
+        }
 
 # Create CrewAI tools using the @tool decorator
 @tool("KayakHotelSearch")
@@ -299,22 +334,51 @@ def browserbase_search_tool(url: str, options: Optional[Dict[str, Any]] = None):
     return browserbase(url, options)
 
 # Initialize agents with proper tools
-hotels_agent = Agent(
-    role="Hotels",
-    goal="Search hotels",
-    backstory="I am an agent that can search for hotels and find the best accommodations.",
-    tools=[kayak_search_tool, browserbase_search_tool],
-    allow_delegation=False,
-    llm=load_llm()["instance"],
-)
+def create_hotels_agent():
+    """Create and return the hotels agent with proper error handling"""
+    llm_result = load_llm()
+    if llm_result.get("instance") is None:
+        # Return a minimal agent configuration that won't cause errors
+        return Agent(
+            role="Hotels",
+            goal="Search hotels",
+            backstory="I am an agent that can search for hotels and find the best accommodations.",
+            tools=[kayak_search_tool, browserbase_search_tool],
+            allow_delegation=False,
+            verbose=True
+        )
+    return Agent(
+        role="Hotels",
+        goal="Search hotels",
+        backstory="I am an agent that can search for hotels and find the best accommodations.",
+        tools=[kayak_search_tool, browserbase_search_tool],
+        allow_delegation=False,
+        llm=llm_result["instance"],
+    )
 
-summarize_agent = Agent(
-    role="Summarize",
-    goal="Summarize hotel information",
-    backstory="I am an agent that can summarize hotel details and amenities.",
-    allow_delegation=False,
-    llm=load_llm()["instance"],
-)
+def create_summarize_agent():
+    """Create and return the summarize agent with proper error handling"""
+    llm_result = load_llm()
+    if llm_result.get("instance") is None:
+        # Return a minimal agent configuration that won't cause errors
+        return Agent(
+            role="Summarize",
+            goal="Summarize hotel information",
+            backstory="I am an agent that can summarize hotel details and amenities.",
+            allow_delegation=False,
+            verbose=True
+        )
+    return Agent(
+        role="Summarize",
+        goal="Summarize hotel information",
+        backstory="I am an agent that can summarize hotel details and amenities.",
+        allow_delegation=False,
+        llm=llm_result["instance"],
+    )
+
+# Create the agents
+hotels_agent = create_hotels_agent()
+summarize_agent = create_summarize_agent()
 
 output_search_example = """
 Here are our top 5 hotels in New York for September 21-22, 2024:

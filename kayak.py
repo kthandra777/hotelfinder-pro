@@ -1,8 +1,17 @@
 import os
 import requests
+import json
+import re
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
-from crewai.tools import tool
+from typing import Dict, Any, List, Optional, Callable, TypeVar
+
+# Create a tool decorator for compatibility
+def tool(name: str):
+    """Simple decorator to mark a function as a tool"""
+    def decorator(func: Callable) -> Callable:
+        func.name = name
+        return func
+    return decorator
 
 @tool("Kayak Hotel Tool")
 def kayak_hotel_search(
@@ -121,4 +130,38 @@ def kayak_hotels(location: str, check_in_date: str, check_out_date: str, num_adu
             "booking_link": url,
             "stars": 4
         }
-    ] 
+    ]
+
+# Mock data for Kayak
+kayak_mock_data = [
+    {
+        "name": "Grand Hyatt",
+        "price": "$249/night",
+        "rating": "4.2/5 Excellent",
+        "rating_normalized": 4.2,
+        "location": "Downtown",
+        "source": "Kayak",
+        "stars": 4,
+        "booking_link": "https://www.kayak.com/hotels/grand-hyatt"
+    },
+    {
+        "name": "Marriott Resort",
+        "price": "$189/night",
+        "rating": "4.0/5 Very Good",
+        "rating_normalized": 4.0,
+        "location": "Beachfront",
+        "source": "Kayak",
+        "stars": 4,
+        "booking_link": "https://www.kayak.com/hotels/marriott-resort"
+    },
+    {
+        "name": "Boutique Hotel",
+        "price": "$159/night",
+        "rating": "3.8/5 Good",
+        "rating_normalized": 3.8,
+        "location": "City Center",
+        "source": "Kayak",
+        "stars": 3,
+        "booking_link": "https://www.kayak.com/hotels/boutique-hotel"
+    }
+] 

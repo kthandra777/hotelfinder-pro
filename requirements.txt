@@ -1,19 +1,19 @@
 fastapi==0.103.1
 uvicorn==0.23.2
 streamlit
-langchain_groq
+langchain_groq==0.1.5
 python-dotenv==1.0.0
 selenium==4.12.0
 # Pin playwright to a compatible version
-playwright<1.40.0
+playwright==1.37.0
 html2text==2020.1.16
 requests==2.31.0
-# Pin crewai to a specific version
-crewai==0.28.8
-langchain-core
+# Use an older version of crewai that's compatible with Streamlit Cloud
+crewai==0.8.1
+langchain-core==0.1.10
+langchain==0.0.335
 bs4==0.0.1
 beautifulsoup4==4.12.2
 webdriver-manager==4.0.0
-pydantic>=2.4.2,<3.0.0
-# Remove direct greenlet dependency and add chromadb with a compatible version
-chromadb==0.4.22
+pydantic==2.5.2
+# No direct chromadb dependency to avoid SQLite issues
