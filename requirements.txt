@@ -8,8 +8,8 @@ selenium==4.12.0
 playwright==1.37.0
 html2text==2020.1.16
 requests==2.31.0
-# Use an older version of crewai that's compatible with Streamlit Cloud
-crewai==0.8.1
+# Use a version of crewai that exists and is compatible with Python 3.12
+crewai==0.28.8
 langchain-core==0.1.10
 langchain==0.0.335
 bs4==0.0.1
