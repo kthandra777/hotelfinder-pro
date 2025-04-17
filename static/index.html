@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Finder Agent</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .permission-container, .key-container {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+        }
+        .search-form {
+            display: none;
+            margin-top: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .tab-container {
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            display: inline-block;
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+        }
+        .tab.active {
+            background-color: #f9f9f9;
+            border-color: #ddd;
+            border-radius: 5px 5px 0 0;
+            color: #2980b9;
+        }
+        #results {
+            margin-top: 30px;
+        }
+        .hotel-card {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .hotel-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .hotel-price, .hotel-rating {
+            margin-bottom: 5px;
+        }
+        .hotel-source {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .has-key {
+            color: green;
+        }
+        .no-key {
+            color: red;
+        }
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: auto;
+            padding: 8px 15px;
+            background-color: #ecf0f1;
+            color: #333;
+        }
+        .settings-panel {
+            display: none;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hotel Finder Agent</h1>
+        
+        <button id="settings-btn" class="settings-btn">⚙️ Settings</button>
+        
+        <div id="settings-panel" class="settings-panel">
+            <h2>API Key Settings</h2>
+            <p>These keys are required for the hotel search functionality. They will be stored in your browser session.</p>
+            
+            <div class="form-group">
+                <label for="browserbase-key">BrowserBase API Key: <span id="browserbase-status" class="no-key">Not Set</span></label>
+                <input type="password" id="browserbase-key" placeholder="Enter BrowserBase API key">
+            </div>
+            
+            <div class="form-group">
+                <label for="proxy-key">Proxy API Key (Optional): <span id="proxy-status" class="no-key">Not Set</span></label>
+                <input type="password" id="proxy-key" placeholder="Enter Proxy API key (optional)">
+            </div>
+            
+            <button id="save-keys-btn">Save API Keys</button>
+        </div>
+        
+        <div id="permission-container" class="permission-container">
+            <h2>Permission Required</h2>
+            <p>This application will search for hotels using web scraping technologies. No personal data is collected or shared.</p>
+            <p>By clicking "Allow", you acknowledge and consent to the application using web scraping to find hotel information.</p>
+            <div id="key-warning" class="hidden" style="color: red; margin-bottom: 10px;">
+                <p>Warning: API Keys are required. Please set them in Settings before proceeding.</p>
+            </div>
+            <button id="allow-btn">Allow Hotel Search</button>
+        </div>
+        
+        <div id="search-form" class="search-form">
+            <div class="tab-container">
+                <div class="tab active" data-tab="search">Search</div>
+                <div class="tab" data-tab="results">Results</div>
+            </div>
+            
+            <div id="search-tab">
+                <h2>Search for Hotels</h2>
+                <div class="form-group">
+                    <label for="location">Location:</label>
+                    <input type="text" id="location" placeholder="City or destination" required>
+                </div>
+                <div class="form-group">
+                    <label for="check-in">Check-in Date (optional):</label>
+                    <input type="date" id="check-in">
+                </div>
+                <div class="form-group">
+                    <label for="check-out">Check-out Date (optional):</label>
+                    <input type="date" id="check-out">
+                </div>
+                <div class="form-group">
+                    <label for="adults">Number of Adults:</label>
+                    <input type="number" id="adults" min="1" max="10" value="2">
+                </div>
+                <button id="search-btn">Search Hotels</button>
+            </div>
+            
+            <div id="results-tab" class="hidden">
+                <h2>Search Results</h2>
+                <div id="results-content"></div>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading hidden">
+            <p>Searching for hotels... This may take a minute or two as we search multiple sources.</p>
+            <div>Loading...</div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if API keys are set
+            checkApiKeys();
+            
+            // Check if permission is already granted
+            checkPermission();
+            
+            // Settings button
+            document.getElementById('settings-btn').addEventListener('click', function() {
+                const panel = document.getElementById('settings-panel');
+                panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'block' : 'none';
+            });
+            
+            // Save API keys button
+            document.getElementById('save-keys-btn').addEventListener('click', function() {
+                saveApiKeys();
+            });
+            
+            // Permission button
+            document.getElementById('allow-btn').addEventListener('click', function() {
+                // First check if keys are set
+                checkApiKeys().then(keysSet => {
+                    if (keysSet.BROWSERBASE_KEY) {
+                        setPermission(true);
+                        document.getElementById('key-warning').classList.add('hidden');
+                    } else {
+                        document.getElementById('key-warning').classList.remove('hidden');
+                        document.getElementById('settings-panel').style.display = 'block';
+                    }
+                });
+            });
+            
+            // Search button
+            document.getElementById('search-btn').addEventListener('click', function() {
+                searchHotels();
+            });
+            
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show corresponding tab content
+                    if (tabName === 'search') {
+                        document.getElementById('search-tab').classList.remove('hidden');
+                        document.getElementById('results-tab').classList.add('hidden');
+                    } else if (tabName === 'results') {
+                        document.getElementById('search-tab').classList.add('hidden');
+                        document.getElementById('results-tab').classList.remove('hidden');
+                    }
+                });
+            });
+        });
+        
+        async function checkApiKeys() {
+            try {
+                const response = await fetch('/api-keys');
+                const data = await response.json();
+                
+                // Update UI based on key status
+                if (data.BROWSERBASE_KEY) {
+                    document.getElementById('browserbase-status').textContent = 'Set ✓';
+                    document.getElementById('browserbase-status').className = 'has-key';
+                    document.getElementById('browserbase-key').placeholder = '*********';
+                } else {
+                    document.getElementById('browserbase-status').textContent = 'Not Set ✗';
+                    document.getElementById('browserbase-status').className = 'no-key';
+                }
+                
+                if (data.PROXY_API_KEY) {
+                    document.getElementById('proxy-status').textContent = 'Set ✓';
+                    document.getElementById('proxy-status').className = 'has-key';
+                    document.getElementById('proxy-key').placeholder = '*********';
+                } else {
+                    document.getElementById('proxy-status').textContent = 'Not Set';
+                    document.getElementById('proxy-status').className = 'no-key';
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Error checking API keys:', error);
+                return {
+                    BROWSERBASE_KEY: false,
+                    PROXY_API_KEY: false
+                };
+            }
+        }
+        
+        async function saveApiKeys() {
+            const browserbaseKey = document.getElementById('browserbase-key').value;
+            const proxyKey = document.getElementById('proxy-key').value;
+            
+            const keys = {};
+            
+            if (browserbaseKey) {
+                keys.BROWSERBASE_KEY = browserbaseKey;
+            }
+            
+            if (proxyKey) {
+                keys.PROXY_API_KEY = proxyKey;
+            }
+            
+            try {
+                const response = await fetch('/api-keys', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(keys)
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert('API keys saved successfully');
+                    // Update UI
+                    await checkApiKeys();
+                    
+                    // Clear password fields
+                    document.getElementById('browserbase-key').value = '';
+                    document.getElementById('proxy-key').value = '';
+                }
+            } catch (error) {
+                console.error('Error saving API keys:', error);
+                alert('Error saving API keys. Please try again.');
+            }
+        }
+        
+        async function checkPermission() {
+            try {
+                const response = await fetch('/permission-status');
+                const data = await response.json();
+                
+                if (data.permission_granted) {
+                    showSearchForm();
+                }
+            } catch (error) {
+                console.error('Error checking permission:', error);
+            }
+        }
+        
+        async function setPermission(allow) {
+            try {
+                const response = await fetch('/permission', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ allow_search: allow })
+                });
+                
+                const data = await response.json();
+                
+                if (data.permission_granted) {
+                    showSearchForm();
+                }
+            } catch (error) {
+                console.error('Error setting permission:', error);
+            }
+        }
+        
+        function showSearchForm() {
+            document.getElementById('permission-container').style.display = 'none';
+            document.getElementById('search-form').style.display = 'block';
+        }
+        
+        async function searchHotels() {
+            const location = document.getElementById('location').value;
+            if (!location) {
+                alert('Please enter a location');
+                return;
+            }
+            
+            const checkIn = document.getElementById('check-in').value;
+            const checkOut = document.getElementById('check-out').value;
+            const adults = document.getElementById('adults').value;
+            
+            // Show loading
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('results-content').innerHTML = '';
+            
+            try {
+                // Build URL with parameters
+                let url = `/hotels?location=${encodeURIComponent(location)}`;
+                if (checkIn) url += `&check_in_date=${checkIn}`;
+                if (checkOut) url += `&check_out_date=${checkOut}`;
+                if (adults) url += `&num_adults=${adults}`;
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        // Permission denied
+                        document.getElementById('permission-container').style.display = 'block';
+                        document.getElementById('search-form').style.display = 'none';
+                        throw new Error('Permission required');
+                    } else if (response.status === 400) {
+                        // Missing API keys
+                        const errorData = await response.json();
+                        document.getElementById('settings-panel').style.display = 'block';
+                        throw new Error(errorData.detail || 'API key missing');
+                    }
+                    throw new Error('Server error');
+                }
+                
+                const data = await response.json();
+                displayResults(data.hotels);
+                
+                // Switch to results tab
+                document.querySelector('.tab[data-tab="results"]').click();
+            } catch (error) {
+                console.error('Error searching hotels:', error);
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        <p>Error: ${error.message || 'Could not complete the search'}</p>
+                    </div>
+                `;
+                document.getElementById('results-content').innerHTML = `
+                    <div class="error">
+                        <p>Error: ${error.message || 'Could not complete the search'}</p>
+                    </div>
+                `;
+            } finally {
+                // Hide loading
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+        
+        function displayResults(hotels) {
+            const resultsDiv = document.getElementById('results');
+            const resultsContentDiv = document.getElementById('results-content');
+            
+            if (!hotels || hotels.length === 0) {
+                const noResultsMsg = '<p>No hotels found for your search criteria.</p>';
+                resultsDiv.innerHTML = noResultsMsg;
+                resultsContentDiv.innerHTML = noResultsMsg;
+                return;
+            }
+            
+            let html = `<h2>Found ${hotels.length} Hotels</h2>`;
+            
+            hotels.forEach(hotel => {
+                html += `
+                    <div class="hotel-card">
+                        <div class="hotel-name">${hotel.name || 'Unknown Hotel'}</div>
+                        ${hotel.price ? `<div class="hotel-price">Price: ${hotel.price}</div>` : ''}
+                        ${hotel.rating ? `<div class="hotel-rating">Rating: ${hotel.rating_display || hotel.rating}</div>` : ''}
+                        <div class="hotel-source">Source: ${hotel.source}</div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+            resultsContentDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html> 
