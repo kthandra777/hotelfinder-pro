@@ -13,6 +13,6 @@ bs4==0.0.1
 beautifulsoup4==4.12.2
 webdriver-manager==4.0.0
 pydantic>=2.4.2 #
-chromadb-1.0.5
-tenacity-9.1.2
-requests-2.32.3
+chromadb == 1.0.5
+tenacity == 9.1.2
+requests == 2.32.3
